@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 //?dotenv requere cde her;
 require('dotenv').config();
@@ -30,6 +30,35 @@ async function run() {
     try {
         //?connect the client to the server;
         await client.connect();
+        const myDB = client.db("smartDeails2");
+        const myColl = myDB.collection("usersInfo2");
+        //Todo:post userData in db;
+        app.post('/usersInfo2', async (req, res) => {
+            const allUserData = req.body;
+
+            try {
+                const result = await myColl.insertOne(allUserData); 
+                res.send(result); 
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ message: 'Insert failed' });
+            }
+        });
+        //Todo:Gel specifique usersInfo;
+        app.get('/usersInfo2/:id',async(req,res)=>{
+            const id = req.params.id;
+            const query = {_id:new ObjectId(id)};
+            const result = await myColl.findOne(query);
+            res.send(result)
+        })
+
+
+
+
+
+
+
+
         //?send a ping to confirm a successful connection;
         await client.db("admin").command({ ping: 1 });
         console.log('Ping your deployment. You successfully connected to MongoDB! ');
@@ -39,10 +68,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
-
 //?Listing code here;
 app.listen(port, () => {
     console.log(`This server is runing in port:${port}`);
