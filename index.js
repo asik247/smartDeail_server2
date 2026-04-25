@@ -1,10 +1,13 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
-// const cors = require('cors');
+const cors = require('cors');
 //?dotenv requere cde her;
 require('dotenv').config();
 // console.log(`dotenvhere ${process.env.DB_PASS}`);
 const app = express();
+//?middleware her;
+app.use(cors())
+app.use(express.json())
 const port = process.env.PORT || 5000;
 //?Root api;
 app.get('/', (req, res) => {
