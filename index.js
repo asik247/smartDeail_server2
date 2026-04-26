@@ -63,12 +63,13 @@ async function run() {
         app.post('/usersInfo2', async (req, res) => {
             const allUserData = req.body;
             // same user second time db te store hobe na;email dia condition dai;
-            const email = req.body.email;
-            // console.log(email);
-            const query = {email:email}
-            const existingUsers = await usersColl.findOne(query);
-            if(existingUsers){
-                res.send({message:'user alreday exist'})
+            // const email = req.body.email;
+            // const query = {email:email}
+            const existingUsers = await usersColl.findOne({ email: allUserData.email });
+            if (existingUsers) {
+                return res.status(409).send({
+                    message: 'এই email দিয়ে user আগেই আছে!'
+                });
             }
             const result = await usersColl.insertOne(allUserData);
             res.send(result);
