@@ -35,11 +35,11 @@ async function run() {
         //?products2 coll;
         const productsColl = myDB.collection('products2');
         //Todo:product get method code hre;
-        app.get('/products2',async(req,res)=>{
+        app.get('/products2', async (req, res) => {
             const email = req.query.email;
             // console.log(email);
             const query = {};
-            if(email){
+            if (email) {
                 query.email = email
             }
             const cursor = productsColl.find(query);
@@ -47,49 +47,52 @@ async function run() {
             res.send(result)
         })
         //! Latest Products get;
-        app.get('/latestProducts2',async(req,res)=>{
-            const latestPro =productsColl.find().sort({created_at:-1}).limit(6)
+        app.get('/latestProducts2', async (req, res) => {
+            const latestPro = productsColl.find().sort({ created_at: -1 }).limit(6)
             const result = await latestPro.toArray();
             res.send(result);
         })
         //? id use get specifique product get;
-        app.get('/products2/:id',async(req,res)=>{
+        app.get('/products2/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id:new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await productsColl.findOne(query);
             res.send(result)
         })
         //Todo:post userData in db;
         app.post('/usersInfo2', async (req, res) => {
             const allUserData = req.body;
-
-            try {
-                const result = await usersColl.insertOne(allUserData); 
-                res.send(result); 
-            } catch (error) {
-                console.error(error);
-                res.status(500).send({ message: 'Insert failed' });
+            // same user second time db te store hobe na;email dia condition dai;
+            const email = req.body.email;
+            // console.log(email);
+            const query = {email:email}
+            const existingUsers = await usersColl.findOne(query);
+            if(existingUsers){
+                res.send({message:'user alreday exist'})
             }
+            const result = await usersColl.insertOne(allUserData);
+            res.send(result);
+
         });
         //Todo:Get specifique usersInfo;
-        app.get('/usersInfo2/:id',async(req,res)=>{
+        app.get('/usersInfo2/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id:new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await usersColl.findOne(query);
             res.send(result)
         })
         //Todo:Patch/update userInfo;
-        app.patch('/usersInfo2/:id',async(req,res)=>{
+        app.patch('/usersInfo2/:id', async (req, res) => {
             const id = req.params.id;
             const newUserInfo = req.body;
-            const query = {_id:new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const updatData = {
-                $set:{
-                    name:newUserInfo.name,
-                    email:newUserInfo.email
+                $set: {
+                    name: newUserInfo.name,
+                    email: newUserInfo.email
                 }
             }
-            const result = await usersColl.updateOne(query,updatData);
+            const result = await usersColl.updateOne(query, updatData);
             res.send(result)
         })
 
