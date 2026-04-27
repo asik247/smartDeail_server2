@@ -34,6 +34,8 @@ async function run() {
         const usersColl = myDB.collection("usersInfo2");
         //?products2 coll;
         const productsColl = myDB.collection('products2');
+        //?BidsColl2
+        const bidsColl = myDB.collection('bids2')
         //Todo:product get method code hre;
         app.get('/products2', async (req, res) => {
             const email = req.query.email;
@@ -94,6 +96,13 @@ async function run() {
                 }
             }
             const result = await usersColl.updateOne(query, updatData);
+            res.send(result)
+        })
+        //Todo:Bids Post Method code here;
+        app.post('/bids2',async(req,res)=>{
+            const bidsData = req.body;
+            console.log(bidsData);
+            const result = await bidsColl.insertOne(bidsData);
             res.send(result)
         })
 
