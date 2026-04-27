@@ -98,6 +98,15 @@ async function run() {
             const result = await usersColl.updateOne(query, updatData);
             res.send(result)
         })
+        //Todo:Bids get all bids for db;
+        app.get('/bids2/:thisProductId',async(req,res)=>{
+            const id = req.params.thisProductId;
+            const query = {product:id}
+            console.log(id);
+            const cursor = bidsColl.find(query).sort({bid_price:-1})
+            const result = await cursor.toArray();
+            res.send(result)
+        })
         //Todo:Bids Post Method code here;
         app.post('/bids2',async(req,res)=>{
             const bidsData = req.body;
