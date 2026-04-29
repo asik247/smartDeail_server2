@@ -1,21 +1,51 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+const port = process.env.PORT || 5000;
+const admin = require("firebase-admin");
 //?dotenv requere cde her;
 require('dotenv').config();
 // console.log(`dotenvhere ${process.env.DB_PASS}`);
 const app = express();
+//!Firebase sdk relative;
+const serviceAccount = require("./smartdeail2-firebase-.json");
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+
+
 //?middleware her;
 app.use(cors())
 app.use(express.json())
-const port = process.env.PORT || 5000;
+//!VerifyFireBaseToken:
+const verifyFireBaseToken = async(req, res, next) => {
+    if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = req.headers.authorization.split(' ')[1]
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    try{
+        const tokenInfo = await admin.auth().verifyIdToken(token);
+        req.token_email = tokenInfo.email;
+        
+        // console.log(tokenInfo);
+        next();
+
+    }
+    catch{
+         return res.status(401).send({ message: 'unauthorized access' })
+    }
+    
+
+}
 //?Root api;
 app.get('/', (req, res) => {
     res.send('This is root server api here now')
 })
 //?mongodb uri code hre;
-/**W4IT9gaf6XcApfTg smartDeails2 */
-// const uri = "mongodb+srv://smartDeails2:W4IT9gaf6XcApfTg@cluster0.fdzc9ua.mongodb.net/?appName=Cluster0";
 const uri = `mongodb+srv://${process.env.DB_USERS}:${process.env.DB_PASS}@cluster0.fdzc9ua.mongodb.net/?appName=Cluster0`;
 //?mongodb client code hre;
 const client = new MongoClient(uri, {
@@ -99,19 +129,34 @@ async function run() {
             res.send(result)
         })
         //Todo:Bids get all bids for db;
-        app.get('/bids2/:thisProductId',async(req,res)=>{
+        app.get('/bids2/:thisProductId',verifyFireBaseToken, async (req, res) => {
             const id = req.params.thisProductId;
-            const query = {product:id}
+            const query = { product: id }
             console.log(id);
-            const cursor = bidsColl.find(query).sort({bid_price:-1})
+            const cursor = bidsColl.find(query).sort({ bid_price: -1 })
             const result = await cursor.toArray();
             res.send(result)
         })
         //Todo:Bids Post Method code here;
-        app.post('/bids2',async(req,res)=>{
+        app.post('/bids2', async (req, res) => {
             const bidsData = req.body;
-            console.log(bidsData);
+            // console.log(bidsData);
             const result = await bidsColl.insertOne(bidsData);
+            res.send(result)
+        })
+        //Todo:my bids get db using email;
+        app.get('/bids2', verifyFireBaseToken, async (req, res) => {
+            //!Receive accessToken;
+            const email = req.query.email;
+            const query = {}
+            if (email) {
+                if(email !==req.token_email){
+                    return res.status(403).send({message:'forbiding access'})
+                }
+                query.buyer_email = email
+            }
+            const curosr = bidsColl.find(query);
+            const result = await curosr.toArray();
             res.send(result)
         })
 
