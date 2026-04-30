@@ -90,6 +90,29 @@ async function run() {
         const productsColl = myDB.collection('products2');
         //?BidsColl2
         const bidsColl = myDB.collection('bids2')
+        //?createProductColl
+        const creatAProductCollection = myDB.collection('createProductColl')
+        //?Post Method createAProducts;
+        app.post('/createProductColl', async (req, res) => {
+            try {
+                const cursor = req.body;
+                const alreadyExist = await creatAProductCollection.findOne({
+                    nameValue: cursor.nameValue
+                });
+                if (alreadyExist) {
+                    return res.status(400).send({
+                        message: 'already this product exists'
+                    });
+                }
+                const result = await creatAProductCollection.insertOne(cursor);
+                res.send(result);
+            } catch (error) {
+                console.log(error.message);
+                res.status(500).send({
+                    message: error.message
+                });
+            }
+        });
         //! jwit relative apis✅✅;
         app.post('/getToken', (req, res) => {
             const loggedEmail = req.body;
@@ -185,9 +208,7 @@ async function run() {
                 if (email !== req.token_email) {
                     return res.status(403).send({ message: 'forbiding access' })
                 }
-                // if(email !==req.token_email){
-                //     return res.status(403).send({message:'forbiding access'})
-                // }
+
                 query.buyer_email = email
             }
             const curosr = bidsColl.find(query)
