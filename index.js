@@ -15,8 +15,6 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-
-
 //?middleware her;
 app.use(cors())
 app.use(express.json())
@@ -65,6 +63,24 @@ const verifyJWTToken = (req, res, next) => {
 
     })
 }
+//!VerifyFireBaseToken2;
+const verifyFireBaseToken = async (req, res, next) => {
+    // console.log('in the middleWare',req.headers.authorization);
+    const authorized = req.headers.authorization;
+    if (!authorized) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = authorized.split(' ')[1];
+    try {
+        const decoded = await admin.auth().verifyIdToken(token);
+        // console.log('inside decoded',decoded);
+        req.token_email = decoded.email;
+        next();
+    }
+    catch {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+}
 //?Root api;
 app.get('/', (req, res) => {
     res.send('This is root server api here now')
@@ -93,25 +109,11 @@ async function run() {
         //?createProductColl
         const creatAProductCollection = myDB.collection('createProductColl')
         //?Post Method createAProducts;
-        app.post('/createProductColl', async (req, res) => {
-            try {
-                const cursor = req.body;
-                const alreadyExist = await creatAProductCollection.findOne({
-                    nameValue: cursor.nameValue
-                });
-                if (alreadyExist) {
-                    return res.status(400).send({
-                        message: 'already this product exists'
-                    });
-                }
-                const result = await creatAProductCollection.insertOne(cursor);
-                res.send(result);
-            } catch (error) {
-                console.log(error.message);
-                res.status(500).send({
-                    message: error.message
-                });
-            }
+        app.post('/createProductColl', verifyFireBaseToken, async (req, res) => {
+            console.log('accessToken', req.headers.authorization);
+            const cursor = req.body;
+            const result = await creatAProductCollection.insertOne(cursor);
+            res.send(result);
         });
         //! jwit relative apis✅✅;
         app.post('/getToken', (req, res) => {
@@ -199,7 +201,7 @@ async function run() {
             res.send(result)
         })
         //Todo:my bids get db using email;
-        app.get('/bids2', verifyJWTToken, async (req, res) => {
+        app.get('/bids2', verifyFireBaseToken, async (req, res) => {
             //!Receive accessToken;
             // console.log('heders',req.headers);
             const email = req.query.email;
