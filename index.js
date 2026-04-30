@@ -2,6 +2,8 @@ const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const port = process.env.PORT || 5000;
+//?jwt require✅✅;
+const jwt = require('jsonwebtoken');
 const admin = require("firebase-admin");
 //?dotenv requere cde her;
 require('dotenv').config();
@@ -19,7 +21,32 @@ admin.initializeApp({
 app.use(cors())
 app.use(express.json())
 //!VerifyFireBaseToken:
-const verifyFireBaseToken = async(req, res, next) => {
+// const verifyFireBaseToken = async(req, res, next) => {
+//     if (!req.headers.authorization) {
+//         return res.status(401).send({ message: 'unauthorized access' })
+//     }
+//     const token = req.headers.authorization.split(' ')[1]
+//     if (!token) {
+//         return res.status(401).send({ message: 'unauthorized access' })
+//     }
+//     try{
+//         const tokenInfo = await admin.auth().verifyIdToken(token);
+//         req.token_email = tokenInfo.email;
+
+//         // console.log(tokenInfo);
+//         next();
+
+//     }
+//     catch{
+//          return res.status(401).send({ message: 'unauthorized access' })
+//     }
+
+
+// }
+//!vefifyJwt Token:
+const verifyJWTToken = (req, res, next) => {
+    // console.log('VerifyJWT');
+    // console.log('in middlewar',req.headers);
     if (!req.headers.authorization) {
         return res.status(401).send({ message: 'unauthorized access' })
     }
@@ -27,19 +54,16 @@ const verifyFireBaseToken = async(req, res, next) => {
     if (!token) {
         return res.status(401).send({ message: 'unauthorized access' })
     }
-    try{
-        const tokenInfo = await admin.auth().verifyIdToken(token);
-        req.token_email = tokenInfo.email;
-        
-        // console.log(tokenInfo);
+    //?Token Validation;
+    jwt.verify(token, process.env.BD_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        console.log('after decoded', decoded);
+        req.token_email = decoded.email;
         next();
 
-    }
-    catch{
-         return res.status(401).send({ message: 'unauthorized access' })
-    }
-    
-
+    })
 }
 //?Root api;
 app.get('/', (req, res) => {
@@ -66,6 +90,13 @@ async function run() {
         const productsColl = myDB.collection('products2');
         //?BidsColl2
         const bidsColl = myDB.collection('bids2')
+        //! jwit relative apis✅✅;
+        app.post('/getToken', (req, res) => {
+            const loggedEmail = req.body;
+            console.log(loggedEmail);
+            const token = jwt.sign(loggedEmail, process.env.BD_SECRET, { expiresIn: '1h' })
+            res.send({ token: token });
+        })
         //Todo:product get method code hre;
         app.get('/products2', async (req, res) => {
             const email = req.query.email;
@@ -129,7 +160,7 @@ async function run() {
             res.send(result)
         })
         //Todo:Bids get all bids for db;
-        app.get('/bids2/:thisProductId',verifyFireBaseToken, async (req, res) => {
+        app.get('/bids2/:thisProductId', async (req, res) => {
             const id = req.params.thisProductId;
             const query = { product: id }
             console.log(id);
@@ -145,17 +176,21 @@ async function run() {
             res.send(result)
         })
         //Todo:my bids get db using email;
-        app.get('/bids2', verifyFireBaseToken, async (req, res) => {
+        app.get('/bids2', verifyJWTToken, async (req, res) => {
             //!Receive accessToken;
+            // console.log('heders',req.headers);
             const email = req.query.email;
             const query = {}
             if (email) {
-                if(email !==req.token_email){
-                    return res.status(403).send({message:'forbiding access'})
+                if (email !== req.token_email) {
+                    return res.status(403).send({ message: 'forbiding access' })
                 }
+                // if(email !==req.token_email){
+                //     return res.status(403).send({message:'forbiding access'})
+                // }
                 query.buyer_email = email
             }
-            const curosr = bidsColl.find(query);
+            const curosr = bidsColl.find(query)
             const result = await curosr.toArray();
             res.send(result)
         })
